@@ -78,7 +78,7 @@ export default function DashboardTab({ accounts, chats, messages }: DashboardTab
   });
 
   // Today stats
-  const todayStart = new Date(now.setHours(0,0,0,0)).getTime();
+  const todayStart = new Date(new Date(now).setHours(0,0,0,0)).getTime();
   const receivedToday = messages.filter(m => getTime(m.timestamp) >= todayStart && m.sender === 'contact').length;
   const sentToday = messages.filter(m => getTime(m.timestamp) >= todayStart && m.sender === 'me').length;
   const totalToday = receivedToday + sentToday;
