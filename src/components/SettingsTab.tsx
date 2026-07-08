@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { TeamMember, WhatsAppAccount } from '../types';
+import { TeamMember, WhatsAppAccount, UserProfile } from '../types';
 import {
   getGlobalSettings,
   updateGlobalSettings,
   subscribeToTeam,
   addTeamMember,
-  deleteTeamMember
+  deleteTeamMember,
+  updateUserProfile
 } from '../lib/db-service';
 import {
   Send,
@@ -29,9 +30,15 @@ import { motion, AnimatePresence } from 'motion/react';
 interface SettingsTabProps {
   accounts: WhatsAppAccount[];
   teamMembers: TeamMember[];
+  userProfile: UserProfile;
 }
 
-export default function SettingsTab({ accounts, teamMembers }: SettingsTabProps) {
+export default function SettingsTab({ accounts, teamMembers, userProfile }: SettingsTabProps) {
+  // Personal API Key States
+  const [personalApiKey, setPersonalApiKey] = useState(userProfile.geminiApiKey || '');
+  const [personalApiKeyLoading, setPersonalApiKeyLoading] = useState(false);
+  const [personalApiKeyMsg, setPersonalApiKeyMsg] = useState('');
+
   // Telegram States
   const [telegramToken, setTelegramToken] = useState('');
   const [telegramChatId, setTelegramChatId] = useState('');
@@ -65,6 +72,22 @@ export default function SettingsTab({ accounts, teamMembers }: SettingsTabProps)
     }
     loadTelegram();
   }, []);
+
+  const handleSavePersonalApiKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPersonalApiKeyLoading(true);
+    setPersonalApiKeyMsg('');
+    try {
+      await updateUserProfile(userProfile.id, { geminiApiKey: personalApiKey });
+      setPersonalApiKeyMsg('API Key guardada correctamente.');
+      setTimeout(() => setPersonalApiKeyMsg(''), 3000);
+    } catch (err) {
+      console.error(err);
+      setPersonalApiKeyMsg('Error al guardar la API Key.');
+    } finally {
+      setPersonalApiKeyLoading(false);
+    }
+  };
 
   const handleSaveTelegram = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -272,6 +295,51 @@ export default function SettingsTab({ accounts, teamMembers }: SettingsTabProps)
                 className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-[11px] cursor-pointer"
               >
                 {telegramLoading ? "Guardando..." : "Guardar Cambios"}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Personal Gemini API Key Config */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-150 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-150 pb-3">
+            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="h-4.5 w-4.5 text-indigo-600" />
+              API Key de Gemini
+            </h3>
+          </div>
+
+          <form onSubmit={handleSavePersonalApiKey} className="space-y-4">
+            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+              Configura tu clave personal de Gemini AI para que los agentes utilicen tu propia cuenta para generar respuestas.
+              Si dejas esto en blanco, se utilizará la clave por defecto de la aplicación (si está configurada).
+            </p>
+
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Tu Gemini API Key</label>
+              <input
+                type="password"
+                required
+                value={personalApiKey}
+                onChange={(e) => setPersonalApiKey(e.target.value)}
+                placeholder="AIzaSy..."
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-250 focus:bg-white rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono text-xs transition"
+              />
+            </div>
+
+            {personalApiKeyMsg && (
+              <div className={`p-2.5 border text-[11px] font-bold rounded-xl ${personalApiKeyMsg.includes('Error') ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-slate-50 border-slate-200 text-slate-700'}`}>
+                {personalApiKeyMsg}
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={personalApiKeyLoading}
+                className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-[11px] cursor-pointer"
+              >
+                {personalApiKeyLoading ? "Guardando..." : "Guardar Clave"}
               </button>
             </div>
           </form>

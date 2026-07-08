@@ -30,13 +30,16 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
+import { UserProfile } from '../types';
+
 interface InboxTabProps {
   accounts: WhatsAppAccount[];
   chats: Chat[];
   agents: Agent[];
+  userProfile: UserProfile;
 }
 
-export default function InboxTab({ accounts, chats, agents }: InboxTabProps) {
+export default function InboxTab({ accounts, chats, agents, userProfile }: InboxTabProps) {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [activeMessages, setActiveMessages] = useState<Message[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -182,7 +185,7 @@ export default function InboxTab({ accounts, chats, agents }: InboxTabProps) {
             "Lead Carlos Gómez: No interesado en este momento. La IA respondió con educación agradeciéndole.",
             "Lead Mariana Silva: Consultó sobre integraciones CRM. La IA explicó el soporte nativo."
           ],
-          customApiKey: activeAgent.geminiApiKey
+          customApiKey: userProfile.geminiApiKey || activeAgent.geminiApiKey
         })
       });
 

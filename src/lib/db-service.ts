@@ -14,7 +14,7 @@ import {
   orderBy
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { WhatsAppAccount, Chat, Message, Agent, TeamMember, CRMStats } from '../types';
+import { WhatsAppAccount, Chat, Message, Agent, TeamMember, CRMStats, UserProfile } from '../types';
 
 // Seed initial chats to make the CRM feel live and beautiful on first load
 export async function seedInitialDataForUser(userId: string) {
@@ -32,6 +32,11 @@ export async function createUserProfile(userId: string, data: { email: string; n
     ...data,
     createdAt: Timestamp.now()
   });
+}
+
+export async function updateUserProfile(userId: string, updates: Partial<UserProfile>) {
+  const docRef = doc(db, 'users', userId);
+  await updateDoc(docRef, updates);
 }
 
 export async function getUserProfile(userId: string) {

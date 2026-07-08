@@ -77,6 +77,7 @@ export default function App() {
               name: profile.name || 'User',
               role: (profile.role as 'CEO' | 'SETTER') || 'CEO',
               permissions: profile.permissions || ['dashboard', 'accounts', 'inbox', 'automations', 'settings'],
+              geminiApiKey: profile.geminiApiKey,
               createdAt: profile.createdAt || new Date()
             });
 
@@ -284,7 +285,7 @@ export default function App() {
             )}
 
             {activeTab === 'inbox' && isAllowed('inbox') && (
-              <InboxTab accounts={accounts} chats={chats} agents={agents} />
+              <InboxTab accounts={accounts} chats={chats} agents={agents} userProfile={userProfile} />
             )}
 
             {activeTab === 'automations' && isAllowed('automations') && (
@@ -292,7 +293,7 @@ export default function App() {
             )}
 
             {activeTab === 'settings' && isAllowed('settings') && (
-              <SettingsTab accounts={accounts} teamMembers={teamMembers} />
+              <SettingsTab accounts={accounts} teamMembers={teamMembers} userProfile={userProfile} />
             )}
           </motion.div>
         </main>

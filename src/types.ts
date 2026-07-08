@@ -6,6 +6,7 @@ export interface UserProfile {
   name: string;
   role: UserRole;
   permissions: string[];
+  geminiApiKey?: string;
   createdAt: any;
 }
 
