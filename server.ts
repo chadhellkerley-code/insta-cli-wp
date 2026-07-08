@@ -3,8 +3,29 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import { initializeApp, getApps, cert } from "firebase-admin/app";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
 dotenv.config();
+
+// Initialize Firebase Admin
+if (!getApps().length) {
+  try {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || "{}");
+    if (Object.keys(serviceAccount).length > 0) {
+      initializeApp({
+        credential: cert(serviceAccount)
+      });
+      console.log("Firebase Admin initialized successfully.");
+    } else {
+      console.warn("FIREBASE_SERVICE_ACCOUNT_KEY is not set or is empty. Real webhook will not be able to write to Firestore.");
+    }
+  } catch (err) {
+    console.error("Error parsing FIREBASE_SERVICE_ACCOUNT_KEY", err);
+  }
+}
+
+const db = getApps().length ? getFirestore() : null;
 
 const app = express();
 const PORT = 3000;
@@ -90,13 +111,7 @@ app.post("/api/whatsapp/send", async (req, res) => {
     }
   }
 
-  // Fallback / Mock delivery (if using a mock account)
-  return res.json({
-    success: true,
-    simulated: true,
-    messageId: "wamid.HBgM" + Math.random().toString(36).substring(2, 12).toUpperCase(),
-    status: "delivered"
-  });
+  return res.status(400).json({ error: "Missing accountToken or phoneNumberId for real WhatsApp API delivery." });
 });
 
 // 3. API: Telegram Notifications Agent
@@ -131,51 +146,133 @@ app.post("/api/telegram/notify", async (req, res) => {
   }
 });
 
-// 4. API: AI Agent Chat Reply (Gemini API Integration)
-app.post("/api/gemini/agent-reply", async (req, res) => {
-  const { messages, objectivePrompt, learningLogs, customApiKey } = req.body;
+// 4. API: Webhook para Meta WhatsApp (Verificación y Recepción)
+const META_WEBHOOK_VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || "instacli_wp_secure_token";
 
-  if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: "Messages array is required." });
+app.get("/api/whatsapp/webhook", (req, res) => {
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode === "subscribe" && token === META_WEBHOOK_VERIFY_TOKEN) {
+    console.log("Meta Webhook verified successfully.");
+    res.status(200).send(challenge);
+  } else {
+    res.sendStatus(403);
   }
+});
 
-  try {
-    // 1. Determine key to use (custom key provided by user or backend env variable)
-    let ai = getGeminiClient();
+app.post("/api/whatsapp/webhook", async (req, res) => {
+  const body = req.body;
 
-    // If user provided their own key, initialize dynamic client
-    if (customApiKey && customApiKey.trim().length > 10) {
-      ai = new GoogleGenAI({
-        apiKey: customApiKey,
-        httpOptions: {
-          headers: { 'User-Agent': 'aistudio-build' }
-        }
-      });
-    }
+  if (body.object) {
+    if (
+      body.entry &&
+      body.entry[0].changes &&
+      body.entry[0].changes[0] &&
+      body.entry[0].changes[0].value.messages &&
+      body.entry[0].changes[0].value.messages[0]
+    ) {
+      const phoneNumberId = body.entry[0].changes[0].value.metadata.phone_number_id;
+      const contactPhone = body.entry[0].changes[0].value.contacts[0].wa_id;
+      const contactName = body.entry[0].changes[0].value.contacts[0].profile.name;
+      const message = body.entry[0].changes[0].value.messages[0];
 
-    if (!ai) {
-      // Return a simulated high-quality AI text fallback if key is completely missing
-      const mockReplies = [
-        "¡Hola! Sí, por supuesto. Contamos con soluciones personalizadas de CRM para optimizar tus conversaciones de WhatsApp y potenciar tus ventas en un 150%. ¿Te interesaría agendar una breve llamada de 10 minutos esta semana?",
-        "Hola, entiendo perfectamente tu duda. Con Instacli WP puedes automatizar flujos completos con IA sin perder el toque humano. ¿Cuál es el principal reto de comunicación que tienes hoy en tu negocio?",
-        "¡Perfecto! Agendemos entonces. Me parece excelente que quieras potenciar tu canal de WhatsApp. ¿Te queda mejor por la mañana o por la tarde?",
-        "Muchas gracias por tu respuesta. Entiendo que por ahora no sea tu prioridad. Igualmente, si en el futuro buscas escalar tu embudo de ventas en WhatsApp, no dudes en escribirnos.",
-      ];
-      // Basic rules: if text has calendar/time words, request call. If "uninterested", say thanks.
-      const lastText = messages[messages.length - 1]?.text?.toLowerCase() || "";
-      let textResponse = mockReplies[1];
-      if (lastText.includes("no") || lastText.includes("interesa") || lastText.includes("gracias")) {
-        textResponse = mockReplies[3];
-      } else if (lastText.includes("llamada") || lastText.includes("reunión") || lastText.includes("agendar") || lastText.includes("hora")) {
-        textResponse = mockReplies[2];
-      } else if (lastText.includes("hola") || lastText.includes("buen")) {
-        textResponse = mockReplies[0];
+      let incomingText = "";
+      if (message.type === "text") {
+        incomingText = message.text.body;
+      } else {
+        incomingText = `[Received ${message.type} attachment]`;
       }
-      return res.json({ reply: textResponse, model: "mock-fallback" });
-    }
 
-    // Build the structural prompt with Gemini
-    const systemInstruction = `
+      console.log(`Received message from ${contactName} (${contactPhone}): ${incomingText}`);
+
+      if (db) {
+        try {
+          // 1. Find account based on phoneNumberId
+          const accountsRef = db.collection('accounts');
+          const accountsQuery = await accountsRef.where('phoneNumberId', '==', phoneNumberId).get();
+
+          if (accountsQuery.empty) {
+             console.log("Webhook received message for an unknown account:", phoneNumberId);
+             return res.sendStatus(200);
+          }
+          const accountId = accountsQuery.docs[0].id;
+
+          // 2. Find or create Chat
+          const chatsRef = db.collection('chats');
+          const chatQuery = await chatsRef.where('contactPhone', '==', `+${contactPhone}`).where('accountId', '==', accountId).get();
+
+          let chatId = "";
+          let isAIActive = true;
+
+          if (chatQuery.empty) {
+             const newChatRef = await chatsRef.add({
+                accountId: accountId,
+                contactName: contactName || contactPhone,
+                contactPhone: `+${contactPhone}`,
+                contactAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(contactName || contactPhone)}`,
+                lastMessage: incomingText,
+                lastMessageTime: FieldValue.serverTimestamp(),
+                lastOnline: 'Online',
+                tags: ['New Lead'],
+                unreadCount: 1,
+                stage: 1,
+                isAIActive: true
+             });
+             chatId = newChatRef.id;
+          } else {
+             chatId = chatQuery.docs[0].id;
+             isAIActive = chatQuery.docs[0].data().isAIActive !== false;
+
+             await chatsRef.doc(chatId).update({
+                lastMessage: incomingText,
+                lastMessageTime: FieldValue.serverTimestamp(),
+                unreadCount: FieldValue.increment(1)
+             });
+          }
+
+          // 3. Save Message
+          await db.collection('messages').add({
+             chatId: chatId,
+             accountId: accountId,
+             sender: 'contact',
+             text: incomingText,
+             type: message.type === 'text' ? 'text' : message.type,
+             timestamp: FieldValue.serverTimestamp(),
+             status: 'seen' // From CRM perspective
+          });
+
+          // 4. Real AI Automation Pipeline
+          if (isAIActive) {
+            const agentsQuery = await db.collection('agents').where('isActive', '==', true).limit(1).get();
+            if (!agentsQuery.empty) {
+              const agentData = agentsQuery.docs[0].data();
+              const objectivePrompt = agentData.aiPrompt;
+              const customApiKey = agentData.geminiApiKey;
+
+              // Fetch recent context (last 10 messages)
+              const msgsQuery = await db.collection('messages')
+                .where('chatId', '==', chatId)
+                .orderBy('timestamp', 'asc')
+                .limitToLast(10)
+                .get();
+
+              const history = msgsQuery.docs.map(d => ({
+                sender: d.data().sender,
+                text: d.data().text || ''
+              }));
+
+              let ai = getGeminiClient();
+              if (customApiKey && customApiKey.trim().length > 10) {
+                ai = new GoogleGenAI({
+                  apiKey: customApiKey,
+                  httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+                });
+              }
+
+              if (ai) {
+                const systemInstruction = `
 You are an expert, highly empathetic, and strategic WhatsApp CRM Sales Agent representing Instacli WP.
 Your absolute goal is to lead the conversation towards the following objective:
 "${objectivePrompt || "Interesar al cliente en nuestros servicios de automatización y agendar una llamada de 10 minutos."}"
@@ -184,26 +281,103 @@ Guidelines to follow:
 - Respond in Spanish, since WhatsApp chats are primarily in Spanish.
 - Respond as humanly as possible (keep replies relatively short, conversational, use natural emojis sparingly, and do not use robotic formatting).
 - Use context and adapt dynamically based on what works.
-- Keep learning from past interactions:
-  ${learningLogs && learningLogs.length > 0 ? "Past learned behaviors:\n" + learningLogs.join("\n") : "Always seek the highest engagement, handle objections with poise, and convert interested leads into booked meetings."}
 
 Conversation History so far:
-${messages.map((m: any) => `${m.sender === 'me' ? 'Agent (You)' : 'Client'}: ${m.text}`).join("\n")}
+${history.map((m: any) => `${m.sender === 'me' ? 'Agent (You)' : 'Client'}: ${m.text}`).join("\n")}
 
 Respond to the last message from the Client. Produce ONLY your next response message.
 `;
+                try {
+                  const response = await ai.models.generateContent({
+                    model: "gemini-2.5-flash",
+                    contents: systemInstruction,
+                  });
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: systemInstruction,
-    });
+                  const replyText = response.text ? response.text.trim() : "";
 
-    const replyText = response.text || "¡Hola! ¿Cómo te va? Me gustaría contarte cómo podemos optimizar tus ventas.";
-    return res.json({ reply: replyText.trim(), model: "gemini-2.5-flash" });
+                  if (replyText) {
+                    const accountToken = accountsQuery.docs[0].data().token;
 
-  } catch (err: any) {
-    console.error("Gemini AI Agent Error:", err);
-    return res.status(500).json({ error: err.message || "Failed to generate AI agent response" });
+                    // Send via Meta API
+                    const metaResponse = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
+                      method: "POST",
+                      headers: {
+                        "Authorization": `Bearer ${accountToken}`,
+                        "Content-Type": "application/json"
+                      },
+                      body: JSON.stringify({
+                        messaging_product: "whatsapp",
+                        recipient_type: "individual",
+                        to: contactPhone,
+                        type: "text",
+                        text: { body: replyText }
+                      })
+                    });
+
+                    if (metaResponse.ok) {
+                      // Save reply to DB
+                      await db.collection('messages').add({
+                        chatId: chatId,
+                        accountId: accountId,
+                        sender: 'me',
+                        text: replyText,
+                        type: 'text',
+                        timestamp: FieldValue.serverTimestamp(),
+                        status: 'sent'
+                      });
+
+                      // Update Chat Last Message
+                      await chatsRef.doc(chatId).update({
+                        lastMessage: replyText,
+                        lastMessageTime: FieldValue.serverTimestamp(),
+                      });
+
+                      // Check if message implies high interest / meeting scheduled
+                      const textLower = replyText.toLowerCase();
+                      if (textLower.includes('agend') || textLower.includes('calendly') || textLower.includes('llamada')) {
+                        try {
+                          const settingsSnap = await db.collection('globalSettings').doc('config').get();
+                          if (settingsSnap.exists) {
+                            const settings = settingsSnap.data();
+                            if (settings && settings.telegramEnabled && settings.telegramToken) {
+                              const alertMsg = `🎯 <b>¡Lead Calificado Interesado!</b>\n\n👤 <b>Cliente:</b> ${contactName || contactPhone}\n📞 <b>Teléfono:</b> ${contactPhone}\n🏷️ <b>Estado:</b> Interesado / Listo para agendar\n\n<i>Instacli WP - CRM Automations Agent 🤖</i>`;
+
+                              await fetch('http://localhost:3000/api/telegram/notify', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  botToken: settings.telegramToken,
+                                  chatId: settings.telegramChatId,
+                                  message: alertMsg
+                                })
+                              }).catch(e => console.error("Internal Telegram notify error:", e));
+                            }
+                          }
+                        } catch (e) {
+                          console.error("Error triggering Telegram alert from webhook:", e);
+                        }
+                      }
+                    } else {
+                      const errData = await metaResponse.json();
+                      console.error("Meta API send failed in AI pipeline:", errData);
+                    }
+                  }
+                } catch (aiErr) {
+                  console.error("AI Generation failed:", aiErr);
+                }
+              }
+            }
+          }
+
+        } catch (dbErr) {
+           console.error("Firebase Webhook Processing Error:", dbErr);
+        }
+      }
+
+    }
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(404);
   }
 });
 

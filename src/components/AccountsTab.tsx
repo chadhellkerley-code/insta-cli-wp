@@ -23,7 +23,7 @@ export default function AccountsTab({ accounts }: AccountsTabProps) {
     setError('');
     setSuccess('');
 
-    if (!name.trim() || !phoneNumber.trim() || !token.trim()) {
+    if (!name.trim() || !phoneNumber.trim() || !token.trim() || !phoneNumberId.trim()) {
       setError("Por favor completa los campos requeridos.");
       return;
     }
@@ -33,6 +33,7 @@ export default function AccountsTab({ accounts }: AccountsTabProps) {
       await addWhatsAppAccount({
         name: name,
         phoneNumber: phoneNumber,
+        phoneNumberId: phoneNumberId,
         token: token,
         status: 'connected'
       });
@@ -122,6 +123,18 @@ export default function AccountsTab({ accounts }: AccountsTabProps) {
                       placeholder="Ej. +34 612 345 678"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-600 uppercase">Identificador de Número de Teléfono (Phone Number ID)</label>
+                  <input
+                    type="text"
+                    required
+                    value={phoneNumberId}
+                    onChange={(e) => setPhoneNumberId(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-slate-250 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                    placeholder="Ej. 101234567890123"
+                  />
                 </div>
 
                 <div className="md:col-span-2 space-y-1">
