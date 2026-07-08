@@ -1,0 +1,6 @@
+{
+  "name": "Instacli WP",
+  "description": "A robust CRM for WhatsApp featuring Firebase Authentication, connected accounts management, a real-time WhatsApp-style inbox, multi-stage AI automations utilizing Gemini, and advanced settings for Telegram notifications and multi-role closer/setter access.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

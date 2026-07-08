@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "users": {
+      "description": "User profiles including CEO and closer/setter team members.",
+      "properties": {
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "description": "CEO or SETTER" },
+        "permissions": { "type": "array", "description": "Array of strings representing allowed sections e.g., ['inbox', 'accounts']" },
+        "createdAt": { "type": "timestamp" }
+      }
+    },
+    "accounts": {
+      "description": "Connected WhatsApp accounts with their authentication details.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "token": { "type": "string" },
+        "status": { "type": "string" },
+        "connectedAt": { "type": "timestamp" },
+        "expiresAt": { "type": "timestamp" }
+      }
+    },
+    "chats": {
+      "description": "WhatsApp chat list representing active threads with contacts.",
+      "properties": {
+        "id": { "type": "string" },
+        "accountId": { "type": "string" },
+        "contactName": { "type": "string" },
+        "contactPhone": { "type": "string" },
+        "contactAvatar": { "type": "string" },
+        "lastMessage": { "type": "string" },
+        "lastMessageTime": { "type": "timestamp" },
+        "lastOnline": { "type": "string" },
+        "tags": { "type": "array" },
+        "unreadCount": { "type": "number" },
+        "stage": { "type": "number", "description": "Current automated stage index (1, 2, ...)" },
+        "assignedSetterId": { "type": "string" }
+      }
+    },
+    "messages": {
+      "description": "Individual messages inside chat conversations.",
+      "properties": {
+        "id": { "type": "string" },
+        "chatId": { "type": "string" },
+        "accountId": { "type": "string" },
+        "sender": { "type": "string", "description": "'me' or 'contact'" },
+        "text": { "type": "string" },
+        "type": { "type": "string", "description": "'text', 'image', 'video', or 'audio'" },
+        "mediaUrl": { "type": "string" },
+        "timestamp": { "type": "timestamp" },
+        "status": { "type": "string", "description": "'sent', 'delivered', or 'seen'" }
+      }
+    },
+    "agents": {
+      "description": "AI automation agents created by users.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "minDelay": { "type": "number" },
+        "maxDelay": { "type": "number" },
+        "maxMedia": { "type": "number" },
+        "isActive": { "type": "boolean" },
+        "stages": { "type": "array" },
+        "followUps": { "type": "array" },
+        "geminiApiKey": { "type": "string" },
+        "aiPrompt": { "type": "string" },
+        "createdAt": { "type": "timestamp" }
+      }
+    },
+    "settings": {
+      "description": "Telegram notifications and global CRM settings.",
+      "properties": {
+        "telegramToken": { "type": "string" },
+        "telegramChatId": { "type": "string" },
+        "telegramEnabled": { "type": "boolean" }
+      }
+    }
+  }
+}
