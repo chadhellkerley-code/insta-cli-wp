@@ -1,0 +1,13 @@
+I will update the codebase to use `whatsapp-web.js` instead of the official WhatsApp Meta Cloud API.
+
+Here's the plan:
+1. Update `server.ts` to integrate `whatsapp-web.js`.
+   - Implement `whatsapp-web.js` logic in the backend (create Client, manage auth state, get QR code).
+   - Add new endpoints (`/api/whatsapp/qr`, `/api/whatsapp/status`, `/api/whatsapp/start`) to manage the client.
+   - Update `/api/whatsapp/send` to use `whatsapp-web.js` to send messages instead of making fetch requests to `graph.facebook.com`.
+2. Update `AccountsTab.tsx` in the frontend.
+   - Remove the form that asks for token, phoneNumberId, etc.
+   - Add a UI to request QR code and scan it for `whatsapp-web.js`.
+   - Display connection status.
+3. Remove unneeded fields from db-service (Token etc.) and Types if possible, but keep it simple initially.
+4. Test the system using pre-commit instructions and run a quick build check.

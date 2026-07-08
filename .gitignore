@@ -6,3 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# managed by open-wa
+**.data.json
+**.node-persist**
+**_IGNORE_**
+# end managed by open-wa
+.wwebjs_auth
