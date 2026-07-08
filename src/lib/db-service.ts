@@ -59,6 +59,7 @@ export function subscribeToAccounts(onUpdate: (accounts: WhatsAppAccount[]) => v
         id: doc.id,
         name: data.name || '',
         phoneNumber: data.phoneNumber || '',
+        phoneNumberId: data.phoneNumberId || '',
         token: data.token || '',
         status: data.status || 'connected',
         connectedAt: data.connectedAt?.toDate() || new Date(),

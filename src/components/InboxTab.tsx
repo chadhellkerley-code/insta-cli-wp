@@ -51,10 +51,6 @@ export default function InboxTab({ accounts, chats, agents, userProfile }: Inbox
   const [showTagModal, setShowTagModal] = useState(false);
   const [newTag, setNewTag] = useState('');
 
-  // Simulator input
-  const [simulatorClientText, setSimulatorClientText] = useState('');
-  const [isAIGenerating, setIsAIGenerating] = useState(false);
-
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // Active chat
@@ -100,6 +96,26 @@ export default function InboxTab({ accounts, chats, agents, userProfile }: Inbox
     setInputText('');
 
     try {
+      const currentAccount = accounts.find(a => a.id === activeChat.accountId);
+      if (!currentAccount) throw new Error("Account not found");
+
+      const res = await fetch("/api/whatsapp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accountToken: currentAccount.token,
+          phoneNumberId: currentAccount.phoneNumberId,
+          to: activeChat.contactPhone,
+          messageType: "text",
+          text: textToSend
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to send to WhatsApp API");
+      }
+
       await sendMessageToChat({
         chatId: selectedChatId,
         accountId: activeChat.accountId,
@@ -108,11 +124,9 @@ export default function InboxTab({ accounts, chats, agents, userProfile }: Inbox
         type: 'text',
         status: 'sent'
       });
-
-      // Update message status simulated sequence
-      // sent -> delivered -> seen
     } catch (err) {
       console.error("Error sending message:", err);
+      alert("Error enviando mensaje por WhatsApp API. Revisa las credenciales.");
     }
   };
 
@@ -122,6 +136,26 @@ export default function InboxTab({ accounts, chats, agents, userProfile }: Inbox
     setShowAttachmentModal(false);
 
     try {
+      const currentAccount = accounts.find(a => a.id === activeChat.accountId);
+      if (!currentAccount) throw new Error("Account not found");
+
+      const res = await fetch("/api/whatsapp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accountToken: currentAccount.token,
+          phoneNumberId: currentAccount.phoneNumberId,
+          to: activeChat.contactPhone,
+          messageType: type,
+          mediaUrl: url
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to send to WhatsApp API");
+      }
+
       await sendMessageToChat({
         chatId: selectedChatId,
         accountId: activeChat.accountId,
@@ -133,6 +167,7 @@ export default function InboxTab({ accounts, chats, agents, userProfile }: Inbox
       });
     } catch (err) {
       console.error("Error sending attachment:", err);
+      alert("Error enviando adjunto por WhatsApp API. Revisa las credenciales.");
     }
   };
 
@@ -148,125 +183,6 @@ export default function InboxTab({ accounts, chats, agents, userProfile }: Inbox
     if (!activeChat) return;
     const updatedTags = activeChat.tags.filter(t => t !== tagToRemove);
     await updateChatTags(activeChat.id, updatedTags);
-  };
-
-  // --- AUTOMATIC AI RESPONSE PIPELINE (The CRM AI Agent logic) ---
-  // When a simulated message is received, check if AI is active and respond after min/max delay
-  const triggerAIAgentResponse = async (chatId: string, clientMessageText: string) => {
-    const chat = chats.find(c => c.id === chatId);
-    if (!chat || chat.isAIActive === false) return;
-
-    // Find active agent
-    const activeAgent = agents.find(a => a.isActive);
-    if (!activeAgent) return;
-
-    setIsAIGenerating(true);
-
-    try {
-      // 1. Fetch current chat messages history to provide contextual intelligence
-      // Create simplified messages structure to send to Gemini
-      const messagesHistory = activeMessages.map(m => ({
-        sender: m.sender,
-        text: m.text
-      }));
-
-      // Append the latest client text if it isn't in history yet
-      messagesHistory.push({ sender: 'contact', text: clientMessageText });
-
-      // Call our secure server-side Gemini Proxy endpoint!
-      const response = await fetch('/api/gemini/agent-reply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: messagesHistory,
-          objectivePrompt: activeAgent.aiPrompt,
-          learningLogs: [
-            "Lead Alejandro Ramos: Interesado en automatizar ventas. La IA agendó la llamada explicándole los Webhooks.",
-            "Lead Carlos Gómez: No interesado en este momento. La IA respondió con educación agradeciéndole.",
-            "Lead Mariana Silva: Consultó sobre integraciones CRM. La IA explicó el soporte nativo."
-          ],
-          customApiKey: userProfile.geminiApiKey || activeAgent.geminiApiKey
-        })
-      });
-
-      const data = await response.json();
-      const aiReplyText = data.reply || "¡Hola! Un gusto saludarte. ¿Cómo puedo ayudarte hoy?";
-
-      // Simulate human typing delay
-      const delayMs = Math.floor(Math.random() * (activeAgent.maxDelay - activeAgent.minDelay + 1) + activeAgent.minDelay) * 1000;
-
-      setTimeout(async () => {
-        await sendMessageToChat({
-          chatId: chatId,
-          accountId: chat.accountId,
-          sender: 'me',
-          text: aiReplyText,
-          type: 'text',
-          status: 'sent'
-        });
-
-        // Check if message implies high interest / meeting scheduled
-        const textLower = aiReplyText.toLowerCase();
-        if (textLower.includes('agend') || textLower.includes('calendly') || textLower.includes('llamada')) {
-          // Send Telegram Alert!
-          triggerTelegramNotification(chat.contactName, chat.contactPhone, "Interesado / Listo para agendar");
-        }
-
-        setIsAIGenerating(false);
-      }, delayMs);
-
-    } catch (err) {
-      console.error("AI Agent failed:", err);
-      setIsAIGenerating(false);
-    }
-  };
-
-  // Helper to trigger Telegram agent alert
-  const triggerTelegramNotification = async (clientName: string, clientPhone: string, status: string) => {
-    try {
-      const settings = await getGlobalSettings();
-      if (!settings || !settings.telegramEnabled || !settings.telegramToken) return;
-
-      const alertMsg = `🎯 <b>¡Lead Calificado Interesado!</b>\n\n👤 <b>Cliente:</b> ${clientName}\n📞 <b>Teléfono:</b> ${clientPhone}\n🏷️ <b>Estado:</b> ${status}\n\n<i>Instacli WP - CRM Automations Agent 🤖</i>`;
-
-      await fetch('/api/telegram/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          botToken: settings.telegramToken,
-          chatId: settings.telegramChatId,
-          message: alertMsg
-        })
-      });
-    } catch (e) {
-      console.error("Telegram alert dispatch failed:", e);
-    }
-  };
-
-  // Simulated Client Incoming Message Trigger
-  const handleTriggerSimulatedMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!simulatorClientText.trim() || !selectedChatId || !activeChat) return;
-
-    const text = simulatorClientText;
-    setSimulatorClientText('');
-
-    try {
-      // 1. Send client message
-      await sendMessageToChat({
-        chatId: selectedChatId,
-        accountId: activeChat.accountId,
-        sender: 'contact',
-        text: text,
-        type: 'text',
-        status: 'seen'
-      });
-
-      // 2. Trigger the active AI Agent response pipeline
-      triggerAIAgentResponse(selectedChatId, text);
-    } catch (err) {
-      console.error("Simulator message error:", err);
-    }
   };
 
   return (
@@ -506,14 +422,6 @@ export default function InboxTab({ accounts, chats, agents, userProfile }: Inbox
               </div>
             </div>
 
-            {/* AI Generation State indicator */}
-            {isAIGenerating && (
-              <div className="px-6 py-2 bg-indigo-50/80 border-t border-slate-150 flex items-center gap-2 text-xs font-semibold text-indigo-700 animate-pulse">
-                <Sparkles className="h-4 w-4 animate-spin text-indigo-600" />
-                <span>Agente de Inteligencia Artificial escribiendo respuesta humana...</span>
-              </div>
-            )}
-
             {/* Footer Form */}
             <form onSubmit={handleSendMessage} className="p-4 bg-slate-50 border-t border-slate-150 flex items-center gap-3">
               {/* "+" Add Attachment Option */}
@@ -551,41 +459,6 @@ export default function InboxTab({ accounts, chats, agents, userProfile }: Inbox
         )}
       </div>
 
-      {/* 3. SIMULATOR PANEL (Absolutely crucial for testing without real integration!) */}
-      {activeChat && (
-        <div className="w-80 bg-slate-800 text-slate-100 border border-slate-700 rounded-2xl p-4 flex flex-col shrink-0 shadow-xl self-start h-[450px]">
-          <div className="flex items-center gap-2 border-b border-slate-700 pb-3 mb-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-ping" />
-            <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-400">Simulador de WhatsApp</h4>
-          </div>
-
-          <div className="flex-1 text-xs text-slate-300 space-y-3 flex flex-col justify-between">
-            <p className="leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-700 text-slate-400 font-medium">
-              Envía un mensaje de prueba simulando al cliente. Si el agente de IA está activo, el sistema responderá automáticamente con demora humana usando <b>Gemini AI</b>.
-            </p>
-
-            <form onSubmit={handleTriggerSimulatedMessage} className="space-y-2 pt-2 border-t border-slate-700">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase">Mensaje del Cliente</label>
-              <textarea
-                rows={3}
-                required
-                value={simulatorClientText}
-                onChange={(e) => setSimulatorClientText(e.target.value)}
-                placeholder="Ej. Hola, quiero más info del CRM y precios."
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs resize-none"
-              />
-              <button
-                type="submit"
-                className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition cursor-pointer text-xs flex items-center justify-center gap-1"
-              >
-                <Play className="h-3 w-3" />
-                <span>Simular Mensaje del Cliente</span>
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* MULTIMEDIA ATTACHMENT MODAL */}
       <AnimatePresence>
         {showAttachmentModal && (
@@ -611,19 +484,19 @@ export default function InboxTab({ accounts, chats, agents, userProfile }: Inbox
                 >
                   <ImageIcon className="h-5 w-5 text-blue-500 shrink-0" />
                   <div>
-                    <p>Folleto de Precios (Imagen)</p>
+                    <p>Folleto Descriptivo (Imagen)</p>
                     <p className="text-[10px] font-medium text-slate-400">Imagen descriptiva en alta definición</p>
                   </div>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => handleSendAttachment('video', 'https://www.w3schools.com/html/mov_bbb.mp4', 'Aquí tienes el video demo de la plataforma.')}
+                  onClick={() => handleSendAttachment('video', 'https://www.w3schools.com/html/mov_bbb.mp4', 'Aquí tienes el video explicativo de la plataforma.')}
                   className="p-3 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-xl flex items-center gap-3 transition text-left text-xs font-bold text-slate-700 hover:text-indigo-800"
                 >
                   <Film className="h-5 w-5 text-rose-500 shrink-0" />
                   <div>
-                    <p>Demo Explicativo (Video)</p>
+                    <p>Video Explicativo (Video)</p>
                     <p className="text-[10px] font-medium text-slate-400">Video explicativo de 1 minuto</p>
                   </div>
                 </button>
