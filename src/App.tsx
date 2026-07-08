@@ -36,6 +36,20 @@ export default function App() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  // Check if Firebase configuration is missing
+  if (!import.meta.env.VITE_FIREBASE_API_KEY) {
+    return (
+      <div className="min-h-screen bg-rose-50 flex flex-col items-center justify-center font-sans p-6 text-center">
+        <ShieldCheck className="h-16 w-16 text-rose-600 mb-4" />
+        <h1 className="text-2xl font-bold text-slate-800 mb-2">Faltan Variables de Entorno</h1>
+        <p className="text-slate-600 max-w-md mb-6">
+          La aplicación no puede conectarse a Firebase porque faltan las credenciales.
+          Si estás en Vercel, ve a <strong>Settings &gt; Environment Variables</strong> y agrega las variables <code>VITE_FIREBASE_...</code>
+        </p>
+      </div>
+    );
+  }
+
   // Real-time collections state
   const [accounts, setAccounts] = useState<WhatsAppAccount[]>([]);
   const [chats, setChats] = useState<Chat[]>([]);
