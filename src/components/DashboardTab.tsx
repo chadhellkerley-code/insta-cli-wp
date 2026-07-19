@@ -32,6 +32,27 @@ interface DashboardTabProps {
 }
 
 export default function DashboardTab({ accounts, chats, messages }: DashboardTabProps) {
+  // Early return empty state if no accounts connected
+  if (accounts.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Panel de Control</h1>
+          <p className="text-sm text-slate-500">Métricas en tiempo real y rendimiento de tus agentes de WhatsApp.</p>
+        </div>
+        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-slate-150 shadow-sm text-center">
+          <div className="bg-slate-50 p-4 rounded-full mb-4">
+            <Users className="h-10 w-10 text-slate-300" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-800 mb-2">No hay cuentas conectadas</h3>
+          <p className="text-sm text-slate-500 max-w-md">
+            Conecta una cuenta de WhatsApp en la sección de Cuentas para empezar a ver métricas, gráficos y gestionar tus chats.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Aggregate stats from the data live, fallback to beautiful dummy totals if no messages
   const totalAccounts = accounts.length;
 
