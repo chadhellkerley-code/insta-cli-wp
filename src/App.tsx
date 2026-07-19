@@ -264,7 +264,7 @@ export default function App() {
             transition={{ duration: 0.2 }}
           >
             {activeTab === 'dashboard' && isAllowed('dashboard') && (
-              <DashboardTab accounts={accounts} chats={chats} messages={[]} />
+              <DashboardTab accounts={accounts} chats={chats.filter(c => accounts.some(a => a.id === c.accountId))} messages={[]} />
             )}
 
             {activeTab === 'accounts' && isAllowed('accounts') && (
@@ -272,7 +272,7 @@ export default function App() {
             )}
 
             {activeTab === 'inbox' && isAllowed('inbox') && (
-              <InboxTab accounts={accounts} chats={chats} agents={agents} userProfile={userProfile} />
+              <InboxTab accounts={accounts} chats={chats.filter(c => accounts.some(a => a.id === c.accountId))} agents={agents} userProfile={userProfile} />
             )}
 
             {activeTab === 'automations' && isAllowed('automations') && (

@@ -219,6 +219,23 @@ export default function InboxTab({ accounts, chats, agents, userProfile }: Inbox
     }
   };
 
+  // Early return if no accounts connected
+  if (accounts.length === 0) {
+    return (
+      <div className="h-[calc(100vh-140px)] flex gap-4 overflow-hidden font-sans relative">
+        <div className="flex-1 bg-white border border-slate-200 rounded-2xl flex flex-col items-center justify-center p-12 text-center shadow-sm">
+          <div className="bg-slate-50 p-4 rounded-full mb-4">
+            <Phone className="h-12 w-12 text-slate-300" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-800 mb-2">No hay cuentas conectadas</h3>
+          <p className="text-sm text-slate-500 max-w-md">
+            Tu bandeja de entrada está inactiva porque no hay ninguna cuenta de WhatsApp conectada. Ve a la pestaña de Cuentas para conectar un número y empezar a recibir chats.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Helper to trigger Telegram agent alert
   const triggerTelegramNotification = async (clientName: string, clientPhone: string, status: string) => {
     try {
