@@ -187,7 +187,7 @@ export default function AccountsTab({ accounts }: AccountsTabProps) {
         </div>
         <div className="bg-indigo-50/50 border border-indigo-100/60 p-4 rounded-xl flex flex-col justify-between">
           <p className="text-xs text-slate-600 italic font-medium leading-relaxed">
-            "Nuestra plataforma monitorea los tokens de acceso y simula la renovación automática periódica antes de que venzan para evitar interrupciones."
+            "Nuestra plataforma monitorea los tokens de acceso y los renueva de forma automática periódicamente antes de que venzan para evitar interrupciones."
           </p>
           <div className="text-[10px] text-indigo-600 font-bold tracking-wider uppercase pt-2">
             ✓ Smart Token Keep-Alive
