@@ -3,7 +3,6 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './lib/firebase';
 import {
   getUserProfile,
-  ensureDemoDataSeeded,
   subscribeToAccounts,
   subscribeToChats,
   subscribeToAgents,
@@ -61,11 +60,6 @@ export default function App() {
 
   // Trigger seeding and listen to Firebase Auth State Change
   useEffect(() => {
-    // Seed initial demo data (so first-time CEO registers see a gorgeous active CRM with chats)
-    ensureDemoDataSeeded().then(() => {
-      console.log("Instacli WP demo data verified / seeded successfully.");
-    });
-
     const unsubAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
@@ -105,14 +99,7 @@ export default function App() {
           console.error("Auth loading failed:", e);
         }
       } else {
-        // Only clear state if there isn't a manual "Demo login" state active
-        // (This protects the fallback mock flow!)
-        setUserProfile(current => {
-          if (current?.id.startsWith('demo_')) {
-            return current; // keep mock login
-          }
-          return null;
-        });
+        setUserProfile(null);
       }
       setAuthLoading(false);
     });
