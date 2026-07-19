@@ -23,7 +23,7 @@ export default function AccountsTab({ accounts }: AccountsTabProps) {
     setError('');
     setSuccess('');
 
-    if (!name.trim() || !phoneNumber.trim() || !token.trim()) {
+    if (!name.trim() || !phoneNumber.trim() || !phoneNumberId.trim() || !token.trim()) {
       setError("Por favor completa los campos requeridos.");
       return;
     }
@@ -33,6 +33,7 @@ export default function AccountsTab({ accounts }: AccountsTabProps) {
       await addWhatsAppAccount({
         name: name,
         phoneNumber: phoneNumber,
+        phoneNumberId: phoneNumberId,
         token: token,
         status: 'connected'
       });
@@ -124,7 +125,22 @@ export default function AccountsTab({ accounts }: AccountsTabProps) {
                   </div>
                 </div>
 
-                <div className="md:col-span-2 space-y-1">
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-600 uppercase">Identificador de Número de Teléfono</label>
+                  <div className="relative">
+                    <Key className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                    <input
+                      type="text"
+                      required
+                      value={phoneNumberId}
+                      onChange={(e) => setPhoneNumberId(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 bg-white border border-slate-250 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono"
+                      placeholder="Ej. 1029384756..."
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-600 uppercase flex items-center justify-between">
                     <span>Meta Cloud API Token (Acceso Temporal de 60 días o Permanente)</span>
                     <span className="text-[10px] text-indigo-600 font-bold flex items-center gap-1">

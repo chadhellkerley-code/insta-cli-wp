@@ -14,6 +14,7 @@ export interface WhatsAppAccount {
   id: string;
   name: string;
   phoneNumber: string;
+  phoneNumberId?: string;
   token: string;
   status: 'connected' | 'disconnected' | 'expired';
   connectedAt: any;
