@@ -51,8 +51,6 @@ export default function InboxTab({ accounts, chats, agents, userProfile }: Inbox
   const [showTagModal, setShowTagModal] = useState(false);
   const [newTag, setNewTag] = useState('');
 
-  // Simulator input
-  const [simulatorClientText, setSimulatorClientText] = useState('');
   const [isAIGenerating, setIsAIGenerating] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -240,32 +238,6 @@ export default function InboxTab({ accounts, chats, agents, userProfile }: Inbox
       });
     } catch (e) {
       console.error("Telegram alert dispatch failed:", e);
-    }
-  };
-
-  // Simulated Client Incoming Message Trigger
-  const handleTriggerSimulatedMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!simulatorClientText.trim() || !selectedChatId || !activeChat) return;
-
-    const text = simulatorClientText;
-    setSimulatorClientText('');
-
-    try {
-      // 1. Send client message
-      await sendMessageToChat({
-        chatId: selectedChatId,
-        accountId: activeChat.accountId,
-        sender: 'contact',
-        text: text,
-        type: 'text',
-        status: 'seen'
-      });
-
-      // 2. Trigger the active AI Agent response pipeline
-      triggerAIAgentResponse(selectedChatId, text);
-    } catch (err) {
-      console.error("Simulator message error:", err);
     }
   };
 
@@ -550,41 +522,6 @@ export default function InboxTab({ accounts, chats, agents, userProfile }: Inbox
           </div>
         )}
       </div>
-
-      {/* 3. SIMULATOR PANEL (Absolutely crucial for testing without real integration!) */}
-      {activeChat && (
-        <div className="w-80 bg-slate-800 text-slate-100 border border-slate-700 rounded-2xl p-4 flex flex-col shrink-0 shadow-xl self-start h-[450px]">
-          <div className="flex items-center gap-2 border-b border-slate-700 pb-3 mb-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-ping" />
-            <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-400">Simulador de WhatsApp</h4>
-          </div>
-
-          <div className="flex-1 text-xs text-slate-300 space-y-3 flex flex-col justify-between">
-            <p className="leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-700 text-slate-400 font-medium">
-              Envía un mensaje de prueba simulando al cliente. Si el agente de IA está activo, el sistema responderá automáticamente con demora humana usando <b>Gemini AI</b>.
-            </p>
-
-            <form onSubmit={handleTriggerSimulatedMessage} className="space-y-2 pt-2 border-t border-slate-700">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase">Mensaje del Cliente</label>
-              <textarea
-                rows={3}
-                required
-                value={simulatorClientText}
-                onChange={(e) => setSimulatorClientText(e.target.value)}
-                placeholder="Ej. Hola, quiero más info del CRM y precios."
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs resize-none"
-              />
-              <button
-                type="submit"
-                className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition cursor-pointer text-xs flex items-center justify-center gap-1"
-              >
-                <Play className="h-3 w-3" />
-                <span>Simular Mensaje del Cliente</span>
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* MULTIMEDIA ATTACHMENT MODAL */}
       <AnimatePresence>

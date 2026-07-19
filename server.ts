@@ -18,7 +18,6 @@ function getGeminiClient() {
   if (!aiClient) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      console.warn("GEMINI_API_KEY environment variable is not set. AI replies will be fallback-simulated.");
       return null;
     }
     aiClient = new GoogleGenAI({
@@ -90,13 +89,7 @@ app.post("/api/whatsapp/send", async (req, res) => {
     }
   }
 
-  // Fallback / Mock delivery (if using a mock account)
-  return res.json({
-    success: true,
-    simulated: true,
-    messageId: "wamid.HBgM" + Math.random().toString(36).substring(2, 12).toUpperCase(),
-    status: "delivered"
-  });
+  return res.status(400).json({ error: "Missing or invalid accountToken/phoneNumberId for Meta API" });
 });
 
 // 3. API: Telegram Notifications Agent
@@ -154,24 +147,7 @@ app.post("/api/gemini/agent-reply", async (req, res) => {
     }
 
     if (!ai) {
-      // Return a simulated high-quality AI text fallback if key is completely missing
-      const mockReplies = [
-        "¡Hola! Sí, por supuesto. Contamos con soluciones personalizadas de CRM para optimizar tus conversaciones de WhatsApp y potenciar tus ventas en un 150%. ¿Te interesaría agendar una breve llamada de 10 minutos esta semana?",
-        "Hola, entiendo perfectamente tu duda. Con Instacli WP puedes automatizar flujos completos con IA sin perder el toque humano. ¿Cuál es el principal reto de comunicación que tienes hoy en tu negocio?",
-        "¡Perfecto! Agendemos entonces. Me parece excelente que quieras potenciar tu canal de WhatsApp. ¿Te queda mejor por la mañana o por la tarde?",
-        "Muchas gracias por tu respuesta. Entiendo que por ahora no sea tu prioridad. Igualmente, si en el futuro buscas escalar tu embudo de ventas en WhatsApp, no dudes en escribirnos.",
-      ];
-      // Basic rules: if text has calendar/time words, request call. If "uninterested", say thanks.
-      const lastText = messages[messages.length - 1]?.text?.toLowerCase() || "";
-      let textResponse = mockReplies[1];
-      if (lastText.includes("no") || lastText.includes("interesa") || lastText.includes("gracias")) {
-        textResponse = mockReplies[3];
-      } else if (lastText.includes("llamada") || lastText.includes("reunión") || lastText.includes("agendar") || lastText.includes("hora")) {
-        textResponse = mockReplies[2];
-      } else if (lastText.includes("hola") || lastText.includes("buen")) {
-        textResponse = mockReplies[0];
-      }
-      return res.json({ reply: textResponse, model: "mock-fallback" });
+      return res.status(500).json({ error: "Gemini API Client is not initialized. Please provide a valid customApiKey or configure the server environment variable." });
     }
 
     // Build the structural prompt with Gemini

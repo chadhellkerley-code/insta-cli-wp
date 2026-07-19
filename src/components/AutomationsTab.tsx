@@ -201,14 +201,6 @@ export default function AutomationsTab({ agents }: AutomationsTabProps) {
     }
   };
 
-  // Simulated Machine Learning logs display
-  const learningLogs = [
-    { text: "Conversación Alejandro Ramos: Detectó interés en CRM. Adaptó respuesta para detallar APIs.", type: "success" },
-    { text: "Conversación Carlos Gómez: Detectó objeción por falta de presupuesto. Registró el motivo del rechazo.", type: "rejection" },
-    { text: "Conversación Mariana Silva: Pidió integraciones de Calendly. La IA propuso enlace directo.", type: "success" },
-    { text: "Conversación Lucia Fernandez: Reunión agendada. Registrado como Objetivo Cumplido.", type: "success" }
-  ];
-
   return (
     <div className="space-y-6">
       {/* Tab Header */}
@@ -294,14 +286,6 @@ export default function AutomationsTab({ agents }: AutomationsTabProps) {
               La IA analiza cada cierre exitoso o rechazo para aprender el mejor camino conversacional y auto-perfeccionar sus respuestas.
             </p>
 
-            <div className="space-y-2 text-[10px]">
-              {learningLogs.map((log, idx) => (
-                <div key={idx} className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex gap-2">
-                  <div className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${log.type === 'success' ? 'bg-indigo-600' : 'bg-rose-500'}`} />
-                  <p className="text-slate-300">{log.text}</p>
-                </div>
-              ))}
-            </div>
             <div className="bg-indigo-950/20 border border-indigo-900/30 p-2.5 rounded-xl text-center">
               <span className="text-[10px] text-indigo-400 font-extrabold uppercase">✓ IA con Ajuste de Prompt Dinámico</span>
             </div>
