@@ -124,29 +124,6 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     }
   };
 
-  // Demo fallback to bypass Firebase Auth constraints instantly if needed during tests
-  const handleDemoLogin = (role: 'CEO' | 'SETTER') => {
-    const demoProfile: UserProfile = role === 'CEO'
-      ? {
-          id: 'demo_ceo_uid',
-          email: 'ceo@instacli.com',
-          name: 'Matias Diaz (CEO)',
-          role: 'CEO',
-          permissions: ['dashboard', 'accounts', 'inbox', 'automations', 'settings'],
-          createdAt: new Date()
-        }
-      : {
-          id: 'demo_setter_uid',
-          email: 'lucas@instacli.com',
-          name: 'Lucas (Closer/Setter)',
-          role: 'SETTER',
-          permissions: ['inbox'], // Only inbox by default
-          createdAt: new Date()
-        };
-
-    onLoginSuccess(demoProfile);
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
       {/* Background decoration */}
@@ -272,27 +249,6 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             </div>
           </div>
 
-          <div className="mt-6 pt-6 border-t border-slate-100">
-            <p className="text-[10px] text-center text-slate-500 mb-3 uppercase tracking-wider font-bold">
-              Acceso Rápido de Demostración
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('CEO')}
-                className="py-1.5 px-3 bg-indigo-50 hover:bg-indigo-100/70 border border-indigo-100 rounded-xl text-xs font-bold text-indigo-600 transition-colors"
-              >
-                Entrar como CEO
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('SETTER')}
-                className="py-1.5 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-colors"
-              >
-                Entrar como Setter
-              </button>
-            </div>
-          </div>
         </div>
       </motion.div>
     </div>

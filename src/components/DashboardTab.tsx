@@ -41,23 +41,22 @@ export default function DashboardTab({ accounts, chats, messages }: DashboardTab
   let repliedCount = chats.filter(c => c.lastMessage !== '').length;
   let objectiveMetCount = chats.filter(c => c.tags.some(t => t.toLowerCase().includes('met') || t.toLowerCase().includes('agendado') || t.toLowerCase().includes('objetivo'))).length;
 
-  // Mock beautiful flow data for the charts
   const chartData = [
-    { name: 'Lun', Recibidos: 24, Enviados: 35, Interesados: 8 },
-    { name: 'Mar', Recibidos: 45, Enviados: 52, Interesados: 15 },
-    { name: 'Mié', Recibidos: 35, Enviados: 48, Interesados: 12 },
-    { name: 'Jue', Recibidos: 60, Enviados: 75, Interesados: 25 },
-    { name: 'Vie', Recibidos: 72, Enviados: 85, Interesados: 32 },
-    { name: 'Sáb', Recibidos: 40, Enviados: 42, Interesados: 18 },
-    { name: 'Dom', Recibidos: 30, Enviados: 38, Interesados: 10 },
+    { name: 'Lun', Recibidos: 0, Enviados: 0, Interesados: 0 },
+    { name: 'Mar', Recibidos: 0, Enviados: 0, Interesados: 0 },
+    { name: 'Mié', Recibidos: 0, Enviados: 0, Interesados: 0 },
+    { name: 'Jue', Recibidos: 0, Enviados: 0, Interesados: 0 },
+    { name: 'Vie', Recibidos: 0, Enviados: 0, Interesados: 0 },
+    { name: 'Sáb', Recibidos: 0, Enviados: 0, Interesados: 0 },
+    { name: 'Dom', Recibidos: 0, Enviados: 0, Interesados: 0 },
   ];
 
   const conversionData = [
-    { name: 'Nuevos', cantidad: chats.length * 3 + 4, fill: '#38bdf8' },
-    { name: 'Respondidos', cantidad: repliedCount + 12, fill: '#fbbf24' },
-    { name: 'Interesados', cantidad: interestedCount + 8, fill: '#6366f1' },
-    { name: 'No Interesados', cantidad: uninterestedCount + 3, fill: '#f87171' },
-    { name: 'Citas Agendadas', cantidad: objectiveMetCount + 4, fill: '#a78bfa' }
+    { name: 'Nuevos', cantidad: chats.length, fill: '#38bdf8' },
+    { name: 'Respondidos', cantidad: repliedCount, fill: '#fbbf24' },
+    { name: 'Interesados', cantidad: interestedCount, fill: '#6366f1' },
+    { name: 'No Interesados', cantidad: uninterestedCount, fill: '#f87171' },
+    { name: 'Citas Agendadas', cantidad: objectiveMetCount, fill: '#a78bfa' }
   ];
 
   return (
@@ -92,9 +91,9 @@ export default function DashboardTab({ accounts, chats, messages }: DashboardTab
         <div className="bg-white p-5 rounded-2xl border border-slate-150 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
           <div className="space-y-1">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Recibidos Hoy</p>
-            <h3 className="text-2xl font-bold text-slate-800">48 Mensajes</h3>
+            <h3 className="text-2xl font-bold text-slate-800">0 Mensajes</h3>
             <p className="text-xs text-blue-500 font-semibold flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" /> +15% vs ayer
+              <TrendingUp className="h-3 w-3" /> 0% vs ayer
             </p>
           </div>
           <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
@@ -106,8 +105,8 @@ export default function DashboardTab({ accounts, chats, messages }: DashboardTab
         <div className="bg-white p-5 rounded-2xl border border-slate-150 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
           <div className="space-y-1">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tasa de Respuesta</p>
-            <h3 className="text-2xl font-bold text-slate-800">92.4%</h3>
-            <p className="text-xs text-indigo-600 font-semibold">Excelente engagement</p>
+            <h3 className="text-2xl font-bold text-slate-800">0%</h3>
+            <p className="text-xs text-indigo-600 font-semibold">-</p>
           </div>
           <div className="bg-amber-50 p-3 rounded-xl border border-amber-100">
             <ThumbsUp className="h-6 w-6 text-amber-500" />
@@ -118,8 +117,8 @@ export default function DashboardTab({ accounts, chats, messages }: DashboardTab
         <div className="bg-white p-5 rounded-2xl border border-slate-150 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
           <div className="space-y-1">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Objetivos Cumplidos</p>
-            <h3 className="text-2xl font-bold text-slate-800">{objectiveMetCount + 3} Citas</h3>
-            <p className="text-xs text-violet-500 font-semibold">Conversión optimizada</p>
+            <h3 className="text-2xl font-bold text-slate-800">{objectiveMetCount} Citas</h3>
+            <p className="text-xs text-violet-500 font-semibold">-</p>
           </div>
           <div className="bg-violet-50 p-3 rounded-xl border border-violet-100">
             <CheckCircle className="h-6 w-6 text-violet-500" />
@@ -133,27 +132,27 @@ export default function DashboardTab({ accounts, chats, messages }: DashboardTab
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
             <p className="text-xs font-semibold text-slate-500">Ayer</p>
-            <p className="text-xl font-bold text-slate-700">142</p>
+            <p className="text-xl font-bold text-slate-700">0</p>
           </div>
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
             <p className="text-xs font-semibold text-slate-500">Últimos 7 días</p>
-            <p className="text-xl font-bold text-slate-700">894</p>
+            <p className="text-xl font-bold text-slate-700">0</p>
           </div>
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
             <p className="text-xs font-semibold text-slate-500">Últimos 14 días</p>
-            <p className="text-xl font-bold text-slate-700">1,540</p>
+            <p className="text-xl font-bold text-slate-700">0</p>
           </div>
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
             <p className="text-xs font-semibold text-slate-500">Últimos 30 días</p>
-            <p className="text-xl font-bold text-slate-700">3,420</p>
+            <p className="text-xl font-bold text-slate-700">0</p>
           </div>
           <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100/60 text-center">
             <p className="text-xs font-semibold text-indigo-600">Total Netos</p>
-            <p className="text-xl font-bold text-indigo-700">6,124</p>
+            <p className="text-xl font-bold text-indigo-700">0</p>
           </div>
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center col-span-2 sm:col-span-1">
             <p className="text-xs font-semibold text-slate-500">Interés Gral.</p>
-            <p className="text-xl font-bold text-slate-700">28%</p>
+            <p className="text-xl font-bold text-slate-700">0%</p>
           </div>
         </div>
       </div>
