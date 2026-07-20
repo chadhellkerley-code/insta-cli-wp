@@ -69,19 +69,6 @@ export function subscribeToAccounts(onUpdate: (accounts: WhatsAppAccount[]) => v
   });
 }
 
-export async function addWhatsAppAccount(account: Omit<WhatsAppAccount, 'id' | 'connectedAt' | 'expiresAt'>) {
-  const connectedAt = Timestamp.now();
-  // Set expiration to 60 days from now
-  const expiresAt = Timestamp.fromDate(new Date(Date.now() + 60 * 24 * 60 * 60 * 1000));
-
-  await addDoc(collection(db, 'accounts'), {
-    ...account,
-    connectedAt,
-    expiresAt,
-    status: 'connected'
-  });
-}
-
 export async function deleteWhatsAppAccount(accountId: string) {
   await deleteDoc(doc(db, 'accounts', accountId));
 }
