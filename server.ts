@@ -92,7 +92,70 @@ app.post("/api/whatsapp/send", async (req, res) => {
   return res.status(400).json({ error: "Missing or invalid accountToken/phoneNumberId for Meta API" });
 });
 
-// 3. API: Telegram Notifications Agent
+// 3. API: WhatsApp Webhook (Verification)
+app.get("/api/whatsapp/webhook", (req, res) => {
+  const verify_token = process.env.WHATSAPP_VERIFY_TOKEN;
+
+  // Parse params from the webhook verification request
+  let mode = req.query["hub.mode"];
+  let token = req.query["hub.verify_token"];
+  let challenge = req.query["hub.challenge"];
+
+  // Check if a token and mode were sent
+  if (mode && token) {
+    // Check the mode and token sent are correct
+    if (mode === "subscribe" && token === verify_token) {
+      // Respond with 200 OK and challenge token from the request
+      console.log("WEBHOOK_VERIFIED");
+      res.status(200).send(challenge);
+    } else {
+      // Responds with '403 Forbidden' if verify tokens do not match
+      res.sendStatus(403);
+    }
+  } else {
+    // If we don't have both, just 400
+    res.sendStatus(400);
+  }
+});
+
+// 3.5. API: WhatsApp Webhook (Event Receiver)
+app.post("/api/whatsapp/webhook", (req, res) => {
+  const body = req.body;
+
+  // Check if this is an event from a page subscription
+  if (body.object === "whatsapp_business_account") {
+    // Iterate over each entry - there may be multiple if batched
+    body.entry.forEach(function(entry: any) {
+      // Get the changes array
+      const changes = entry.changes;
+      if (changes && changes.length > 0) {
+        const value = changes[0].value;
+        const messages = value.messages;
+        const statuses = value.statuses;
+
+        if (messages && messages.length > 0) {
+          const message = messages[0];
+          console.log("Received a WhatsApp Message:", message);
+          // Here you would typically process the incoming message
+          // and save it to your database or trigger your AI bot
+        } else if (statuses && statuses.length > 0) {
+          const status = statuses[0];
+          console.log("Received a WhatsApp Status Update:", status);
+        } else {
+          console.log("Received a WhatsApp Webhook event without messages or statuses:", value);
+        }
+      }
+    });
+
+    // Return a '200 OK' response to all requests
+    res.status(200).send("EVENT_RECEIVED");
+  } else {
+    // Return a '404 Not Found' if event is not from a whatsapp API
+    res.sendStatus(404);
+  }
+});
+
+// 4. API: Telegram Notifications Agent
 app.post("/api/telegram/notify", async (req, res) => {
   const { botToken, chatId, message } = req.body;
 
@@ -124,7 +187,7 @@ app.post("/api/telegram/notify", async (req, res) => {
   }
 });
 
-// 4. API: AI Agent Chat Reply (Gemini API Integration)
+// 5. API: AI Agent Chat Reply (Gemini API Integration)
 app.post("/api/gemini/agent-reply", async (req, res) => {
   const { messages, objectivePrompt, learningLogs, customApiKey } = req.body;
 
